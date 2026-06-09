@@ -107,6 +107,7 @@ async def procesar_envio(
             preregister_request = SendRequest(converted=False, send=False)
             response = await obtener_envios(client, preregister_request)
             order_id: int = response["data"][0]["id"]
+            print(f"EL ID DE LA ORDEN ES: {order_id}")
             
         except Exception as exc:
             detail = f"Error en preregister: {exc}"
@@ -120,7 +121,8 @@ async def procesar_envio(
         # ── Paso 3: Set Code ────────────────────────────────────────────
         
         try:
-            set_code_request = SetCodeRequest(code=settings.CLAVE_PAQUETE)
+            set_code_request = SetCodeRequest(code=settings.CLAVE_PAQUETE, ids=[order_id])
+            print(set_code_request.json())
             await set_code(client, set_code_request)
             
         except Exception as exc:

@@ -4,6 +4,7 @@
 
 import urllib.parse
 
+# pyrefly: ignore [missing-import]
 from bs4 import BeautifulSoup
 from fastapi import HTTPException
 
@@ -44,8 +45,15 @@ async def login(client: HttpClient) -> dict:
     }
 
     response_login = await client.client.post(
-        "/login", data=datos_login, follow_redirects=True
+        "/login", 
+        data=datos_login, 
+        follow_redirects=True,
+        headers={
+            "Origin": settings.CLIENT_BASE_URL,
+            "Referer": f"{settings.CLIENT_BASE_URL}/login"
+        }
     )
+
 
     # Paso 3: Verificar que el login fue exitoso
     if "dashboard" in str(response_login.url) or response_login.status_code == 200:

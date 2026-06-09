@@ -2,23 +2,71 @@
 # service.py — Lógica de set_code + generación de códigos + Pushover
 # ============================================================================
 
+import time
+import random
+import string
+import hmac
+import hashlib
 from app.features.process_shipment.set_code.schemas import SetCodeRequest
 from app.shared.http_client import HttpClient
-import random
 import httpx
 
+
+def generate_shalom_security_headers(method: str, url_path: str) -> dict:
+    """
+    Genera los headers de seguridad requeridos por la API de Shalom.
+    Basado en la lógica de su frontend:
+    t = Math.floor(Date.now() / 1e3)
+    n = Math.random().toString(36).substring(2, 10)
+    a = e.method.toUpperCase() + e.url.replace(/^\//, "") + t + n
+    r = s.a.HmacSHA256(a, "sk_over_nn43Df3L6;:-Zn=8Xu_bUn]J;)Z,E=^)]k=!Pg|I*(-").toString();
+    """
+    timestamp = str(int(time.time()))
+    
+    # Generar un nonce (cadena alfanumérica aleatoria como en JS: toString(36).substring(2, 10))
+    # toString(36) genera números y letras minúsculas. Son unos 8 o 9 caracteres en JS, pero el substring toma hasta 8.
+    chars = string.ascii_lowercase + string.digits
+    nonce = ''.join(random.choice(chars) for _ in range(8))
+    
+    # Limpiar el path por si empieza con /
+    clean_url_path = url_path.lstrip('/')
+    
+    # Construir la cadena a firmar "a"
+    message_to_sign = method.upper() + clean_url_path + timestamp + nonce
+    
+    # El secreto extraído del código JS
+    secret = "sk_over_nn43Df3L6;:-Zn=8Xu_bUn]J;)Z,E=^)]k=!Pg|I*(-"
+    
+    # Generar HMAC SHA256 "r"
+    signature = hmac.new(
+        secret.encode('utf-8'),
+        message_to_sign.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
+    
+    return {
+        "X-API-KEY": "pk_over_5pg91gO6CSgmT627cf2sC8B7dqjxcLFQhW7HhnitKq3",
+        "X-TIMESTAMP": timestamp,
+        "X-NONCE": nonce,
+        "X-SIGNATURE": signature
+    }
 
 async def set_code(client: HttpClient, datos: SetCodeRequest):
 
     client.verificar_sesion()
     headers = client.obtener_headers_ajax()
+    
+    # Generar las cabeceras de seguridad dinámicamente para este endpoint y método
+    endpoint = "/service-orders/security-code/massive"
+    security_headers = generate_shalom_security_headers("POST", endpoint)
+    headers.update(security_headers)
 
     response = await client.client.post(
-        "/security-code/massive",
+        endpoint,
         headers=headers,
         json=datos.model_dump(),
     )
-
+    print(response.json())
     return response.json()
 
 
