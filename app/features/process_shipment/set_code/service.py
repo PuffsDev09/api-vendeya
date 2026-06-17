@@ -145,8 +145,8 @@ async def send_shipment_pushover_notification(
         response = await client.post(
             "https://api.pushover.net/1/messages.json",
             json={
-                "token": "akjdd8361vnrmn7775p5db1eeqh8bv",
-                "user": "uc4s3r8tb8uu24v7xef9qcrypew3ep",
+                "token": "a81e6ie5dnk8nw53yb4duqh5exmsqf",
+                "user": "utyv57a6ecrp9btkaqadpx7c3epejb",
                 "message": message,
             },
         )
